@@ -1,6 +1,7 @@
 % plotting all cruises cchl from the allcruises_cchl file
 % last modified by EM 20250718 
 
+% edited 7/23 git trial
 %% initial plotting attempts
 
 % remove outliers outside 3 st dev. from the mean
