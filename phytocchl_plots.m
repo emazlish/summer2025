@@ -1,7 +1,7 @@
 % new plotting script for new phytocchl table 7/24/25 - EM
 
 % assigning each row a season designation
-m = datetime(phytocchl.date_sampled, 'InputFormat','yyyy-MM-dd HH:mm:ss+00:00');
+m = datetime(cchl100.date_sampled, 'InputFormat','yyyy-MM-dd HH:mm:ss+00:00');
 
 seasons = table;
 seasons.month = month(m, 'shortname');
@@ -313,15 +313,15 @@ clearvars -except phytocchl seasons
 
 % first need to index where each sample is coming from (in/mid/offshore)
 
-distfromshore = strings(size(phytocchl.nearest_station, 1), 1);
+distfromshore = strings(size(cchl100.nearest_station, 1), 1);
 for i = 1:height(distfromshore)
-    if ismember(phytocchl.nearest_station(i), {'MVCO','L1', 'L2'}) == 1
+    if ismember(cchl100.nearest_station(i), {'MVCO','L1', 'L2'}) == 1
         distfromshore(i) = 'innershelf';
     end
-    if ismember(phytocchl.nearest_station(i), {'L3', 'L4','L5','L6', 'L7', 'L8', 'L9'}) == 1
+    if ismember(cchl100.nearest_station(i), {'L3', 'L4','L5','L6', 'L7', 'L8', 'L9'}) == 1
         distfromshore(i) = 'midshelf';
     end
-    if ismember(phytocchl.nearest_station(i), {'L10', 'L11'}) == 1
+    if ismember(cchl100.nearest_station(i), {'L10', 'L11'}) == 1
         distfromshore(i) = 'outershelf';
     end
 end
@@ -434,30 +434,486 @@ for i = 1:length(labels)
 end
 clear q counts uniqueid qsorted labels xt frac dotidx loc req
 
-%% plotting by shelf distance and depth, c vs. chl by season
+%% 7/28 plotting by shelf distance and depth, c vs. chl by season
 
+cmin = min(cchl100.depth_m);
+cmax = max(cchl100.depth_m);
 subplot(1, 3, 3)
 loc = 'outershelf'; %'innershelf', 'midshelf', 'outershelf' are options
-chlfrac = '0_avg'; % options are 0_avg, greaterthan20, lessthan5, 5to10, 10to20
+chlfrac = '0_avg'; % options are 0_avg, 20_avg, lessthan5, 5to10, 10to20
 chllabel = append('chl_', chlfrac);
 cfrac = 'total'; % options are total, 5, 10, 5to10, 10to20, greaterthan20
 sumClabel = append('sumC_', cfrac);
-scatter(phytocchl.(chllabel)(seasons.season == 'Win' & distfromshore == loc & phytocchl.depth_m <= 50), phytocchl.(sumClabel)(seasons.season == 'Win' & distfromshore == loc & phytocchl.depth_m <= 50), 40, phytocchl.depth_m(seasons.season == 'Win' & distfromshore == loc & phytocchl.depth_m <= 50), 'filled', 'o')
+scatter(cchl100.(chllabel)(seasons.season == 'Win' & distfromshore == loc), cchl100.(sumClabel)(seasons.season == 'Win' & distfromshore == loc), 40, cchl100.depth_m(seasons.season == 'Win' & distfromshore == loc), 'filled', 'o')
 hold on
-scatter(phytocchl.(chllabel)(seasons.season == 'Sum' & distfromshore == loc & phytocchl.depth_m <= 50), phytocchl.(sumClabel)(seasons.season == 'Sum' & distfromshore == loc & phytocchl.depth_m <= 50), 40, phytocchl.depth_m(seasons.season == 'Sum' & distfromshore == loc & phytocchl.depth_m <= 50), 'filled', '^')
+scatter(cchl100.(chllabel)(seasons.season == 'Spr' & distfromshore == loc), cchl100.(sumClabel)(seasons.season == 'Spr' & distfromshore == loc), 40, cchl100.depth_m(seasons.season == 'Spr' & distfromshore == loc), 'filled', 's')
+colormap(flipud(parula))
 hold on
-scatter(phytocchl.(chllabel)(seasons.season == 'Fal' & distfromshore == loc & phytocchl.depth_m <= 50), phytocchl.(sumClabel)(seasons.season == 'Fal' & distfromshore == loc & phytocchl.depth_m <= 50), 40, phytocchl.depth_m(seasons.season == 'Fal' & distfromshore == loc & phytocchl.depth_m <= 50), 'filled', 'p')
+scatter(cchl100.(chllabel)(seasons.season == 'Sum' & distfromshore == loc), cchl100.(sumClabel)(seasons.season == 'Sum' & distfromshore == loc), 40, cchl100.depth_m(seasons.season == 'Sum' & distfromshore == loc), 'filled', '^')
+hold on
+scatter(cchl100.(chllabel)(seasons.season == 'Fal' & distfromshore == loc), cchl100.(sumClabel)(seasons.season == 'Fal' & distfromshore == loc), 40, cchl100.depth_m(seasons.season == 'Fal' & distfromshore == loc), 'filled', 'p')
 colormap(flipud(parula))
 
-legend({'Winter', 'Summer', 'Fall'}, "Location","northeast")
-set(gca, "FontSize", 16)
-xlabel('Chl a (µg L^{-1})')
+
+legend({'Winter', 'Spring','Summer', 'Fall', '', ''}, "Location","northeast")
+set(gca, "FontSize", 14)
+xlim([0 10])
+ylim([0 350])
+clim([cmin cmax])
+xlh = xlabel('Chl a (µg L^{-1})');
 ylabel('Carbon (µg L^{-1})')
 title(loc)
+xl = xlim;
+line(xl, xl*50, 'LineWidth', 1)
+line(xl, xl*200, 'LineWidth', 1)
+legend({'Winter', 'Spring','Summer', 'Fall', '', ''}, "Location","northeast")
 
-% do these at the end
-%c = colorbar;
-%c.Direction = 'reverse';
-%c.Label.String = 'depth (m)';
-%sgtitle('C and chl for upper 50 m of ocean across shelf')
-%clim([0 50])
+%% do these at the end
+c = colorbar;
+c.Direction = 'reverse';
+c.Label.String = 'depth (m)';
+sgtitle('C and chl across shelf')
+%set(gca, "PlotBoxAspectRatio", get(subplot(1, 3, 2), 'PlotBoxAspectRatio'))
+
+
+%% histograms of c:chl dist for diff size classes across shelf
+subplot(3, 5, 15)
+loc = 'outershelf';
+frac = 'greaterthan20';
+ratio = append('C_chl_ratio_', frac);
+input = cchl100.(ratio)(distfromshore == loc & ~isoutlier(cchl100.(ratio)));
+histogram(input, -200:5:200)
+xlabel('C:chl a')
+ylabel('Count')
+title(append(loc, '-', frac))
+
+%% 7/27 scatters of c vs. chl for diff size classes across shelf
+tiledlayout(3, 4)
+cmin = min(cchl100.depth_m);
+cmax = max(cchl100.depth_m);
+
+nexttile;
+loc = 'outershelf';
+frac = 'greaterthan20';
+chlfrac = 'chl_20_avg';
+cfrac = 'sumC_greaterthan20';
+scatter(cchl100.(chlfrac)(distfromshore == loc), cchl100.(cfrac)(distfromshore == loc), 40, cchl100.depth_m(distfromshore == loc), 'filled')
+xlabel('Chl a (µg/L)')
+ylabel('Carbon (µg/L)')
+xlim([-2 4])
+ylim([0 150])
+clim([cmin cmax])
+xl = xlim;
+line(xl, xl*50, 'LineWidth', 1)
+line(xl, xl*200, 'LineWidth', 1)
+title(append(loc, '-', frac))
+
+c = colorbar;
+c.Layout.Tile = 'east';
+c.Direction = 'reverse';
+c.Label.String = 'depth';
+
+
+%% 7/27 by season, totals, all samples 
+subplot(2, 2, 1)
+szn = 'Win';
+req = (seasons.season == szn & ~isoutlier(cchl100.chl_0_avg, 'median'));
+scatter(cchl100.chl_0_avg(req), cchl100.sumC_total(req), 40, cchl100.depth_m(req), 'filled', 'o');
+colormap(flipud(parula))
+xlabel('Chl a (µg L^{-1})')
+ylabel('Carbon (µg L^{-1})')
+set(gca, 'FontSize', 16)
+title('Winter')
+ylim([0 300])
+xlim([0 5])
+xl = xlim;
+line(xl, xl*50, 'LineWidth', 1)
+line(xl, xl*200, 'LineWidth', 1)
+legend('data', 'c:chla = 50', 'c:chla = 200')
+hold on
+clear req szn
+
+subplot(2, 2, 2)
+szn = 'Spr';
+req = (seasons.season == szn & ~isoutlier(cchl100.chl_0_avg, 'median'));
+scatter(cchl100.chl_0_avg(req), cchl100.sumC_total(req), 40, cchl100.depth_m(req), 'filled', 'o');
+colormap(flipud(parula))
+xlabel('Chl a (µg L^{-1})')
+ylabel('Carbon (µg L^{-1})')
+set(gca, 'FontSize', 16)
+title('Spring')
+ylim([0 300])
+xlim([0 5])
+xl = xlim;
+line(xl, xl*50, 'LineWidth', 1)
+line(xl, xl*200, 'LineWidth', 1)
+legend('data', 'c:chla = 50', 'c:chla = 200')
+hold on
+clear req szn
+
+subplot(2, 2, 3)
+szn = 'Sum';
+req = (seasons.season == szn & ~isoutlier(cchl100.chl_0_avg, 'median'));
+scatter(cchl100.chl_0_avg(req), cchl100.sumC_total(req), 40, cchl100.depth_m(req), 'filled', 'o');
+colormap(flipud(parula))
+xlabel('Chl a (µg L^{-1})')
+ylabel('Carbon (µg L^{-1})')
+set(gca, 'FontSize', 16)
+title('Summer')
+ylim([0 300])
+xlim([0 5])
+xl = xlim;
+line(xl, xl*50, 'LineWidth', 1)
+line(xl, xl*200, 'LineWidth', 1)
+legend('data', 'c:chla = 50', 'c:chla = 200')
+hold on
+clear req szn
+
+subplot(2, 2, 4)
+szn = 'Fal';
+req = (seasons.season == szn & ~isoutlier(cchl100.chl_0_avg, 'median'));
+scatter(cchl100.chl_0_avg(req), cchl100.sumC_total(req), 40, cchl100.depth_m(req), 'filled', 'o');
+colormap(flipud(parula))
+xlabel('Chl a (µg L^{-1})')
+ylabel('Carbon (µg L^{-1})')
+set(gca, 'FontSize', 16)
+title('Fall')
+ylim([0 300])
+xlim([0 5])
+xl = xlim;
+line(xl, xl*50, 'LineWidth', 1)
+line(xl, xl*200, 'LineWidth', 1)
+legend('data', 'c:chla = 50', 'c:chla = 200')
+hold on
+clear req szn
+
+c = colorbar;
+c.Direction = 'reverse';
+colormap(flipud(parula))
+c.Label.String = 'depth (m)';
+sgtitle('C vs. chl by season for all total samples, ~isoutlier median')
+
+%% 7/27 BOX and SCATTER WITH ALL MONTHS REPRESENTED (ADD EMPTY MONTHS AS NANS, CONC. ARRAYS)
+% overview plot, ≤100 m
+monthNames = {'Jan'; 'Feb'; 'Mar'; 'Apr'; 'May'; 'Jun'; 'Jul'; 'Aug'; 'Sep'; 'Oct'; 'Nov'; 'Dec'};
+
+concreq = [cchl100.C_chl_ratio_total; nan(12, 1)];
+concmon = [seasons.monthcat; monthNames];
+concmon = categorical(concmon);
+concdpth = [cchl100.depth_m; nan(12, 1)];
+
+ax1 = axes();
+scatter(ax1, concmon, concreq, 40, concdpth, "filled", 'o', 'jitter', 'on', 'jitteramount', 0.1, 'Clipping', 'on')
+ax1.XAxis.Categories = {'Jan'; 'Feb'; 'Mar'; 'Apr'; 'May'; 'Jun'; 'Jul'; 'Aug'; 'Sep'; 'Oct'; 'Nov'; 'Dec'};
+set(ax1, 'YLim', [-20 510])
+pos = get(ax1, 'Position');
+colormap(flipud(parula))
+c = colorbar;
+c.Label.String = 'Depth (m)';
+c.Location = 'eastoutside';
+c.Direction = 'reverse';
+set(ax1, 'Position', pos)
+hold on
+
+ax2 = axes('Position', get(ax1, 'Position'), 'YLim', get(ax1, 'YLim'),  'PlotBoxAspectRatio', get(ax1, 'PlotBoxAspectRatio'), 'Visible','off', 'Color', 'none');
+ax2.XLim = [min(double(seasons.monthcat)) - 0.5, max(double(seasons.monthcat)) + 0.5];
+ax2.XTick = 1:numel(categories(seasons.monthcat));
+hold(ax2, 'on')
+boxplot(ax2, concreq, concmon, 'GroupOrder', monthNames, 'OutlierSize', 10,'DataLim', [0 500],'ExtremeMode', 'clip')
+ax2.YLim = get(ax1, 'YLim');
+dashedLines = findobj(ax2, 'Type', 'Line', 'Tag', '','LineStyle', '--');
+delete(dashedLines)
+title(ax1, 'C:chl a by month, totals ≤100 m depth', 'FontWeight', 'bold')
+set(ax1, 'FontSize', 16)
+
+xt = 1:numel(monthNames);
+for i = 1:length(monthNames)
+    thisMonth = monthNames{i};
+    % logical indexing to count how many match
+    n = sum(concmon == thisMonth & ~isnan(concreq));
+    % add text below each box
+    if n > 0
+    text(xt(i), -10, num2str(n),'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center', 'FontSize', 13)
+    end
+end
+
+%% 7/27 subplots with all months represented!
+
+monthPlaceholder = nan(1, 12);
+monthNames = {'Jan'; 'Feb'; 'Mar'; 'Apr'; 'May'; 'Jun'; 'Jul'; 'Aug'; 'Sep'; 'Oct'; 'Nov'; 'Dec'};
+
+% surface
+subplot(2, 3, 1)
+
+loc = 'innershelf'; % 'innershelf', 'midshelf', 'outershelf' are options
+frac = 'total';
+dotidx = append("C_chl_ratio_", frac);
+
+req = (cchl100.depth_m <= 50 &  ~isnan(cchl100.(dotidx)) &  (distfromshore == loc));
+
+concreq = [cchl100.(dotidx)(req); nan(12, 1)];
+concmon = [seasons.month(req); monthNames];
+concmon = categorical(concmon);
+
+boxplot(concreq, concmon, 'GroupOrder', monthNames, 'DataLim', [0 350], 'ExtremeMode', 'compress')
+xlabel('Month')
+ylabel('C:chl a')
+ylim([-10 350])
+title(append(loc, '-', frac, '-0to50m'))
+
+xt = 1:numel(monthNames);
+for i = 1:length(monthNames)
+    thisMonth = monthNames{i};
+    % logical indexing to count how many match
+    n = sum(concmon == thisMonth & ~isnan(concreq));
+    % add text below each box
+    if n > 0
+    text(xt(i), -10, num2str(n),'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center', 'FontSize', 10)
+    end
+end
+% 50-100 m
+subplot(2, 3, 5)
+loc = 'midshelf'; % 'innershelf', 'midshelf', 'outershelf' are options
+frac = 'total';
+dotidx = append("C_chl_ratio_", frac);
+
+req = (cchl100.depth_m > 50 & cchl100.depth_m <= 100 & ~isnan(cchl100.(dotidx)) & (distfromshore == loc));
+
+concreq = [cchl100.(dotidx)(req); nan(12, 1)];
+concmon = [seasons.month(req); monthNames];
+concmon = categorical(concmon);
+
+boxplot(concreq, concmon, 'GroupOrder', monthNames)
+xlabel('Month')
+ylabel('C:chl a')
+ylim([-10 350])
+title(append(loc, '-', frac, '-50to100m'))
+
+xt = 1:numel(monthNames);
+for i = 1:length(monthNames)
+    thisMonth = monthNames{i};
+    % logical indexing to count how many match
+    n = sum(concmon == thisMonth & ~isnan(concreq));
+    % add text below each box
+    if n > 0
+    text(xt(i), -10, num2str(n),'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center', 'FontSize', 10)
+    end
+end
+
+%% or, plot all upper 100m by shelf distance
+
+monthNames = {'Jan'; 'Feb'; 'Mar'; 'Apr'; 'May'; 'Jun'; 'Jul'; 'Aug'; 'Sep'; 'Oct'; 'Nov'; 'Dec'};
+
+% surface
+subplot(1, 3, 3)
+
+loc = 'outershelf'; % 'innershelf', 'midshelf', 'outershelf' are options
+frac = 'total';
+dotidx = append("C_chl_ratio_", frac);
+
+req = (~isnan(cchl100.(dotidx)) &  (distfromshore == loc));
+
+concreq = [cchl100.(dotidx)(req); nan(12, 1)];
+concmon = [seasons.month(req); monthNames];
+concmon = categorical(concmon);
+
+boxplot(concreq, concmon, 'GroupOrder', monthNames, 'DataLim', [0 350], 'ExtremeMode', 'compress')
+xlabel('Month')
+ylabel('C:chl a')
+ylim([-10 350])
+title(append(loc, '-', frac))
+
+xt = 1:numel(monthNames);
+for i = 1:length(monthNames)
+    thisMonth = monthNames{i};
+    % logical indexing to count how many match
+    n = sum(concmon == thisMonth & ~isnan(concreq));
+    % add text below each box
+    if n > 0
+    text(xt(i), -10, num2str(n),'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center', 'FontSize', 10)
+    end
+end
+%% plot each size fraction, median c:chl for each month by shelf distance
+
+monthNames = {'Jan'; 'Feb'; 'Mar'; 'Apr'; 'May'; 'Jun'; 'Jul'; 'Aug'; 'Sep'; 'Oct'; 'Nov'; 'Dec'};
+
+loc = 'outershelf'; % 'innershelf', 'midshelf', 'outershelf' are options
+frac = 'greaterthan20';
+dotidx = append("C_chl_ratio_", frac);
+
+req = (~isnan(cchl100.(dotidx)) & (distfromshore == loc));
+
+concreq = [cchl100.(dotidx)(req); nan(12, 1)];
+concmon = [seasons.month(req); monthNames];
+concreq = table(concreq);
+concreq.mon = concmon;
+med = table();
+med.mon = monthNames;
+med.med = zeros(length(med.mon), 1);
+for i = 1:length(med.mon)
+    tf = strcmp(concreq.mon, med.mon(i));
+    med.med(i) = median(concreq.concreq(tf == 1), 'omitnan');
+end
+%for i = 1:length(med.med)
+%    if med.med(i) < isoutlier(concreq.concreq(tf ==1), 'median') % exclude months with dramatic negatives from summary
+%       med.med(i) = NaN;
+%    end
+%end
+
+med.mon = categorical(med.mon);
+med.mon = reordercats(med.mon, monthNames);
+plot(med.mon, med.med, '-*', 'LineWidth', 1)
+hold on
+%%
+%legend({'innershelf', 'midshelf', 'outershelf'}, 'FontSize', 22)
+set(gca, 'FontSize', 14)
+xlabel('Month')
+ylabel('C:chl a')
+ylim([0 400])
+title(frac)
+
+%% plotting to see anomalies in c vs. chl in size fractions
+
+transectStations = {'MVCO', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10', 'L11'};
+
+idx = ismember(cchl100.nearest_station, transectStations);
+cchltransect = cchl100(idx, :);
+clear idx
+
+subplot(2, 2, 1)
+scatter(cchltransect.chl_lessthan5, cchltransect.sumC_5)
+line(xlim, xlim*50)
+ylim([0 150])
+line(xlim, xlim*200)
+legend('data', 'c:chl 50', 'c:chl 200')
+title('lessthan5')
+
+subplot(2, 2, 2)
+scatter(cchltransect.chl_5to10, cchltransect.sumC_5to10)
+line(xlim, xlim*50)
+ylim([0 150])
+line(xlim, xlim*200)
+legend('data', 'c:chl 50', 'c:chl 200')
+title('5to10')
+
+subplot(2, 2, 3)
+scatter(cchltransect.chl_10to20, cchltransect.sumC_10to20)
+line(xlim, xlim*50)
+ylim([0 150])
+line(xlim, xlim*200)
+legend('data', 'c:chl 50', 'c:chl 200')
+title('10to20')
+
+subplot(2, 2, 4)
+scatter(cchltransect.chl_20_avg, cchltransect.sumC_greaterthan20)
+line(xlim, xlim*50)
+ylim([0 150])
+line(xlim, xlim*200)
+legend('data', 'c:chl 50', 'c:chl 200')
+title('greaterthan20')
+
+sgtitle('C vs. chl a for each non-total size fraction, only transect stations')
+
+%% 7/26 looking at more recent chl data to see if there's a relationship between
+% rb and chl a concentration (cruises EN695 and onward, accessed from API)
+
+newercruises = {'EN695', 'EN706', 'EN712', 'EN715', 'EN720'};
+% can't read in EN727 yet because chl data doesn't exist for it yet
+
+CHL = table();
+for i = 1:length(newercruises)
+   cruise = string(newercruises(i));
+   CHL2 = readtable(append('https://nes-lter-data.whoi.edu/api/chl/', cruise, '.csv'));
+   CHL = [CHL; CHL2];
+   clear CHL2
+end
+
+idx = ismember(CHL(:, {'cruise', 'cast', 'niskin'}), cchltransect(:, {'cruise','cast','niskin'}));
+CHL = CHL(idx == 1, :);
+
+tf = strcmp(CHL.filter_size, '>0');
+totals = CHL(tf == 1, :);
+
+scatter(totals.chl, totals.rb, 40, totals.depth, 'filled')
+xlabel('chl a (µg/L)')
+ylabel('rb')
+title('totals, EN695 and later')
+c = colorbar;
+colormap(flipud(parula))
+c.Direction = 'reverse';
+mdl = fitlm(totals.chl, totals.rb, "linear");
+plot(mdl)
+
+%% rb subplots
+
+subplot(2, 3, 1)
+cruise = 'EN695';
+tf = strcmp(string(totals.cruise), cruise);
+scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
+xlabel('chl a (µg/L)')
+ylabel('rb')
+ylim([0 500])
+title(append('totals, ', cruise))
+c = colorbar;
+c.Label.String = 'rb:chl a';
+%mdl = fitlm(totals.chl(tf == 1), totals.rb(tf == 1), 'linear', Exclude=(totals.flag(tf == 1)));
+%plot(mdl)
+clear tf cruise
+
+subplot(2, 3, 2)
+cruise = 'EN706';
+tf = strcmp(string(totals.cruise), cruise);
+scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
+xlabel('chl a (µg/L)')
+ylabel('rb')
+ylim([0 500])
+title(append('totals, ', cruise))
+c = colorbar;
+c.Label.String = 'rb:chl a';
+clear tf cruise
+
+subplot(2, 3, 3)
+cruise = 'EN712';
+tf = strcmp(string(totals.cruise), cruise);
+scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
+xlabel('chl a (µg/L)')
+ylabel('rb')
+ylim([0 500])
+title(append('totals, ', cruise))
+c = colorbar;
+c.Label.String = 'rb:chl a';
+clear tf cruise
+
+subplot(2, 3, 4)
+cruise = 'EN715';
+tf = strcmp(string(totals.cruise), cruise);
+scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
+xlabel('chl a (µg/L)')
+ylabel('rb')
+ylim([0 500])
+title(append('totals, ', cruise))
+c = colorbar;
+c.Label.String = 'rb:chl a';
+clear tf cruise
+
+subplot(2, 3, 5)
+cruise = 'EN720';
+tf = strcmp(string(totals.cruise), cruise);
+scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
+xlabel('chl a (µg/L)')
+ylabel('rb')
+ylim([0 500])
+title(append('totals, ', cruise))
+c = colorbar;
+c.Label.String = 'rb:chl a';
+clear tf cruise
+
+% exclusion criterion: any value for totals.ratio < 100
+excluded = totals(totals.ratio < 100, :);
+included = totals(totals.ratio > 100, :);
+
+% histogram of excluded values
+histogram(excluded.rb)
+xlabel('Chl a (µg/L)')
+ylabel('count')
+title('excluded values based on rb:chl a < 100')

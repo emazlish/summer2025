@@ -195,10 +195,14 @@ C_chl.C_chl_ratio_10to20 = C_chl.sumC_10to20 ./ C_chl.chl_10to20;
 % C:chl for 5-10 µm fraction
 C_chl.C_chl_ratio_5to10 = C_chl.sumC_5to10 ./ C_chl.chl_5to10;
 
-%% save file to appropriate directory
+%% only keep samples that have both Attune and IFCB information
+noIFCB = isnan(C_chl.C_100_Inf);
+Attunephytocchl = C_chl(noIFCB == 1, :);
+phytocchl = C_chl(noIFCB == 0, :);
+all_phytoCchl = C_chl;
 
-phytocchl = C_chl; % call it whatever you want (can change if doing separate files for diatoms, dinos etc)
+%% save file to appropriate directory
 
 cd /Users/emazlish/Library/CloudStorage/OneDrive-BowdoinCollege/WHOI_2025/Datasets/new_Cchltable_outputs/
 
-save allcruises_phytocchl.mat phytocchl % remember to change name of file
+save allcruises_phytocchl.mat phytocchl Attunephytocchl all_phytoCchl % remember to change name of file
