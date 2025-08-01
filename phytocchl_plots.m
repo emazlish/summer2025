@@ -477,7 +477,7 @@ sgtitle('C and chl across shelf')
 
 
 %% histograms of c:chl dist for diff size classes across shelf
-subplot(3, 5, 15)
+subplot(3, 5, 1)
 loc = 'outershelf';
 frac = 'greaterthan20';
 ratio = append('C_chl_ratio_', frac);
@@ -738,182 +738,88 @@ end
 monthNames = {'Jan'; 'Feb'; 'Mar'; 'Apr'; 'May'; 'Jun'; 'Jul'; 'Aug'; 'Sep'; 'Oct'; 'Nov'; 'Dec'};
 
 loc = 'outershelf'; % 'innershelf', 'midshelf', 'outershelf' are options
-frac = 'greaterthan20';
+frac = 'total';
 dotidx = append("C_chl_ratio_", frac);
 
-req = (~isnan(cchl100.(dotidx)) & (distfromshore == loc));
+req = (~isnan(cchlQC.(dotidx)) & (distfromshore == loc) & ~isoutlier(cchlQC.(dotidx)));
 
-concreq = [cchl100.(dotidx)(req); nan(12, 1)];
+concreq = [cchlQC.(dotidx)(req); nan(12, 1)];
 concmon = [seasons.month(req); monthNames];
 concreq = table(concreq);
 concreq.mon = concmon;
 med = table();
 med.mon = monthNames;
+
 med.med = zeros(length(med.mon), 1);
+   
 for i = 1:length(med.mon)
     tf = strcmp(concreq.mon, med.mon(i));
     med.med(i) = median(concreq.concreq(tf == 1), 'omitnan');
 end
-%for i = 1:length(med.med)
-%    if med.med(i) < isoutlier(concreq.concreq(tf ==1), 'median') % exclude months with dramatic negatives from summary
-%       med.med(i) = NaN;
-%    end
-%end
 
+%clear frac dotidx i loc req tf concreq concmon 
 med.mon = categorical(med.mon);
 med.mon = reordercats(med.mon, monthNames);
-plot(med.mon, med.med, '-*', 'LineWidth', 1)
+%plot(med.mon, med.med, '-*', 'LineWidth', 1)
 hold on
-%%
-%legend({'innershelf', 'midshelf', 'outershelf'}, 'FontSize', 22)
-set(gca, 'FontSize', 14)
-xlabel('Month')
-ylabel('C:chl a')
-ylim([0 400])
-title(frac)
 
-%% plotting to see anomalies in c vs. chl in size fractions
+%med_totals = table();
+%med_totals.mon = med.mon;
+med_totals.(loc) = med.med;
 
-transectStations = {'MVCO', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10', 'L11'};
+%% save arrays of medians by shelf distance for each size fraction
 
-idx = ismember(cchl100.nearest_station, transectStations);
-cchltransect = cchl100(idx, :);
-clear idx
-
-subplot(2, 2, 1)
-scatter(cchltransect.chl_lessthan5, cchltransect.sumC_5)
-line(xlim, xlim*50)
-ylim([0 150])
-line(xlim, xlim*200)
-legend('data', 'c:chl 50', 'c:chl 200')
-title('lessthan5')
-
-subplot(2, 2, 2)
-scatter(cchltransect.chl_5to10, cchltransect.sumC_5to10)
-line(xlim, xlim*50)
-ylim([0 150])
-line(xlim, xlim*200)
-legend('data', 'c:chl 50', 'c:chl 200')
-title('5to10')
-
-subplot(2, 2, 3)
-scatter(cchltransect.chl_10to20, cchltransect.sumC_10to20)
-line(xlim, xlim*50)
-ylim([0 150])
-line(xlim, xlim*200)
-legend('data', 'c:chl 50', 'c:chl 200')
-title('10to20')
-
-subplot(2, 2, 4)
-scatter(cchltransect.chl_20_avg, cchltransect.sumC_greaterthan20)
-line(xlim, xlim*50)
-ylim([0 150])
-line(xlim, xlim*200)
-legend('data', 'c:chl 50', 'c:chl 200')
-title('greaterthan20')
-
-sgtitle('C vs. chl a for each non-total size fraction, only transect stations')
-
-%% 7/26 looking at more recent chl data to see if there's a relationship between
-% rb and chl a concentration (cruises EN695 and onward, accessed from API)
-
-newercruises = {'EN695', 'EN706', 'EN712', 'EN715', 'EN720'};
-% can't read in EN727 yet because chl data doesn't exist for it yet
-
-CHL = table();
-for i = 1:length(newercruises)
-   cruise = string(newercruises(i));
-   CHL2 = readtable(append('https://nes-lter-data.whoi.edu/api/chl/', cruise, '.csv'));
-   CHL = [CHL; CHL2];
-   clear CHL2
-end
-
-idx = ismember(CHL(:, {'cruise', 'cast', 'niskin'}), cchltransect(:, {'cruise','cast','niskin'}));
-CHL = CHL(idx == 1, :);
-
-tf = strcmp(CHL.filter_size, '>0');
-totals = CHL(tf == 1, :);
-
-scatter(totals.chl, totals.rb, 40, totals.depth, 'filled')
-xlabel('chl a (µg/L)')
-ylabel('rb')
-title('totals, EN695 and later')
-c = colorbar;
-colormap(flipud(parula))
-c.Direction = 'reverse';
-mdl = fitlm(totals.chl, totals.rb, "linear");
-plot(mdl)
-
-%% rb subplots
+save sizefrac_medians.mat med_totals med_lessthan5 med_5to10 med_10to20 med_totals
+%% plot bar graph of medians by shelf distance and size
 
 subplot(2, 3, 1)
-cruise = 'EN695';
-tf = strcmp(string(totals.cruise), cruise);
-scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
-xlabel('chl a (µg/L)')
-ylabel('rb')
-ylim([0 500])
-title(append('totals, ', cruise))
-c = colorbar;
-c.Label.String = 'rb:chl a';
-%mdl = fitlm(totals.chl(tf == 1), totals.rb(tf == 1), 'linear', Exclude=(totals.flag(tf == 1)));
-%plot(mdl)
-clear tf cruise
+x = categorical(med_totals.mon);
+y = [med_totals.innershelf, med_totals.midshelf, med_totals.outershelf];
+bar(x, y, 'grouped')
+xlabel('Month')
+ylabel('C:chl a')
+title('Total fraction')
+ylim([0 200])
+set(gca, 'FontSize', 14)
 
 subplot(2, 3, 2)
-cruise = 'EN706';
-tf = strcmp(string(totals.cruise), cruise);
-scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
-xlabel('chl a (µg/L)')
-ylabel('rb')
-ylim([0 500])
-title(append('totals, ', cruise))
-c = colorbar;
-c.Label.String = 'rb:chl a';
-clear tf cruise
+x = categorical(med_lessthan5.mon);
+y = [med_lessthan5.innershelf, med_lessthan5.midshelf, med_lessthan5.outershelf];
+bar(x, y, 'grouped')
+xlabel('Month')
+ylabel('C:chl a')
+title('<5 µm fraction')
+ylim([0 200])
+set(gca, 'FontSize', 14)
 
 subplot(2, 3, 3)
-cruise = 'EN712';
-tf = strcmp(string(totals.cruise), cruise);
-scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
-xlabel('chl a (µg/L)')
-ylabel('rb')
-ylim([0 500])
-title(append('totals, ', cruise))
-c = colorbar;
-c.Label.String = 'rb:chl a';
-clear tf cruise
+x = categorical(med_5to10.mon);
+y = [med_5to10.innershelf, med_5to10.midshelf, med_5to10.outershelf];
+bar(x, y, 'grouped')
+xlabel('Month')
+ylabel('C:chl a')
+title('5–10 µm fraction')
+ylim([0 200])
+set(gca, 'FontSize', 14)
 
 subplot(2, 3, 4)
-cruise = 'EN715';
-tf = strcmp(string(totals.cruise), cruise);
-scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
-xlabel('chl a (µg/L)')
-ylabel('rb')
-ylim([0 500])
-title(append('totals, ', cruise))
-c = colorbar;
-c.Label.String = 'rb:chl a';
-clear tf cruise
+x = categorical(med_10to20.mon);
+y = [med_10to20.innershelf, med_10to20.midshelf, med_10to20.outershelf];
+bar(x, y, 'grouped')
+xlabel('Month')
+ylabel('C:chl a')
+title('10–20 µm fraction')
+ylim([0 200])
+set(gca, 'FontSize', 14)
 
 subplot(2, 3, 5)
-cruise = 'EN720';
-tf = strcmp(string(totals.cruise), cruise);
-scatter(totals.chl(tf == 1), totals.rb(tf == 1), 40, totals.ratio(tf == 1), 'filled')
-xlabel('chl a (µg/L)')
-ylabel('rb')
-ylim([0 500])
-title(append('totals, ', cruise))
-c = colorbar;
-c.Label.String = 'rb:chl a';
-clear tf cruise
+x = categorical(med_greaterthan20.mon);
+y = [med_greaterthan20.innershelf, med_greaterthan20.midshelf, med_greaterthan20.outershelf];
+bar(x, y, 'grouped')
+xlabel('Month')
+ylabel('C:chl a')
+title('>20 µm fraction')
+ylim([0 200])
+set(gca, 'FontSize', 14)
 
-% exclusion criterion: any value for totals.ratio < 100
-excluded = totals(totals.ratio < 100, :);
-included = totals(totals.ratio > 100, :);
-
-% histogram of excluded values
-histogram(excluded.rb)
-xlabel('Chl a (µg/L)')
-ylabel('count')
-title('excluded values based on rb:chl a < 100')
+%legend({'Inner shelf', 'Midshelf', 'Outer shelf'}, 'FontSize', 30)

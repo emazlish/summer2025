@@ -207,7 +207,7 @@ end
 % overview plot, ≤100 m
 monthNames = {'Jan'; 'Feb'; 'Mar'; 'Apr'; 'May'; 'Jun'; 'Jul'; 'Aug'; 'Sep'; 'Oct'; 'Nov'; 'Dec'};
 
-frac = 'C_chl_ratio_greaterthan20';
+frac = 'C_chl_ratio_total';
 concreq = [cchlQC.(frac); nan(12, 1)];
 concmon = [seasons.monthcat; monthNames];
 concmon = categorical(concmon);
@@ -234,7 +234,7 @@ boxplot(ax2, concreq, concmon, 'GroupOrder', monthNames, 'OutlierSize', 10,'Data
 ax2.YLim = get(ax1, 'YLim');
 dashedLines = findobj(ax2, 'Type', 'Line', 'Tag', '','LineStyle', '--');
 delete(dashedLines)
-title(ax1, append('C:chl a by month, ', frac,' ≤100 m depth'), 'FontWeight', 'bold')
+%title(ax1, append('C:chl a by month, ', frac,' ≤100 m depth'), 'FontWeight', 'bold')
 set(ax1, 'FontSize', 16)
 xlabel(ax1, 'Month')
 ylabel(ax1, 'C:chl a')
