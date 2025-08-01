@@ -1,1 +1,1 @@
-# summer2025
+This repository contains code written as part of my project for the WHOI Summer Student Fellowship program in summer 2025. The project focuses on quantifying carbon to chlorophyll ratios in phytoplankton on the Northeast U.S. Shelf using data from the NES-LTER study.
