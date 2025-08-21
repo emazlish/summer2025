@@ -12,7 +12,49 @@ load /Users/emazlish/Library/CloudStorage/OneDrive-BowdoinCollege/WHOI_2025/Code
 % EN608-EN720 in chronological order)
 load /Users/emazlish/Library/CloudStorage/OneDrive-BowdoinCollege/WHOI_2025/Datasets/new_Cchltable_outputs/allchl_API.mat
 
+% need to add 'label options' to this file
+%% arrange CHL data into one big file
+
+cruises = ismember(CHL.cruise, phytoC_all.cruise);
+CHL = CHL(cruises, :);
+clear cruises
+
+% create string with cruises after EN687 with C and CHL data, or whichever
+% hasn't been loaded yet
+newercruises = {'EN695', 'EN706', 'EN712', 'EN715', 'EN720', 'EN727'};
+% can't read in EN727 yet because chl data doesn't exist for it yet
+
+for i = 1:length(newercruises)
+    cruise = string(newercruises(i));
+    CHL2 = readtable(append('https://nes-lter-data.whoi.edu/api/chl/', cruise, '.csv'));
+    CHL2.iode_quality_flag = CHL2.quality_flag;
+    CHL2.date_time_utc = CHL2.date;
+    CHL2(:, ["vol_filtered", "tau_calibration", "fd_calibration", "rb", "ra", "blank", "rb_blank", "ra_blank", "quality_flag", "date"]) = [];
+    varsToAdd = CHL.Properties.VariableNames(~ismember(CHL.Properties.VariableNames, CHL2.Properties.VariableNames));
+    t = table(nan(size(CHL2, 1), 1));
+    t = addvars(t, nan(size(CHL2, 1), 1));
+    t = addvars(t, nan(size(CHL2, 1), 1));
+    t = addvars(t, nan(size(CHL2, 1), 1));
+    t.Properties.VariableNames = varsToAdd;
+    CHL2 = [CHL2, t];
+    CHL2 = CHL2(:, string(CHL.Properties.VariableNames));
+    CHL2.date_time_utc = datetime(CHL2.date_time_utc, 'InputFormat', 'yyyy-MM-dd HH:mm:ss+00:00');
+    CHL2.method_contributor = num2cell(CHL2.method_contributor);
+    CHL2.project_id = num2cell(CHL2.project_id);
+    CHL2.nearest_station = num2cell(CHL2.nearest_station);
+    CHL2.distance = num2cell(CHL2.distance);
+    CHL = [CHL; CHL2];
+    clear CHL2 t
+end
+
+clear newercruises varsToAdd
 %% create label for each permutation of chl filter size and replicate
+
+label_options = strings(15, 2);
+
+label_options(1:15, 1) = ["chl>0&<10_a"; "chl>0&<10_b"; "chl>0&<10_c"; "chl>0&<200_a"; "chl>0&<200_b"; "chl>0&<200_c"; "chl>10&<200_a"; "chl>10&<200_b"; "chl>10&<200_c"; "chl>20&<200_a"; "chl>20&<200_b"; "chl>20&<200_c"; "chl>5&<200_a"; "chl>5&<200_b"; "chl>5&<200_c"];
+label_options(1:15, 2) =  ["chl<10_a"; "chl<10_b"; "chl<10_c"; "chl>0_a"; "chl>0_b"; "chl>0_c"; "chl_greaterthan10_a"; "chl_greaterthan10_b"; "chl_greaterthan10_c"; "chl>20_a"; "chl>20_b"; "chl>20_c"; "chl>5_a"; "chl>5_b";"chl>5_c"];
+label_options = cellstr(label_options);
 
 allCHL.label = append('chl', allCHL.filter_size, '_', allCHL.replicate);
 allCHL.label2 = (allCHL.label);
@@ -110,6 +152,9 @@ cchlQC.chl_lessthan20 = cchlQC.chl_0_avg - cchlQC.chl_20_avg;
 
 % 10-20 µm chl fraction
 cchlQC.chl_10to20 = cchlQC.chl_lessthan20 - cchlQC.chl_10_avg;
+
+% 5 to 20 µm chl fraction
+cchlQC.chl_5to20 = cchlQC.chl_5_avg - cchlQC.chl_20_avg;
 %% sum C for each size bin and add as new column
 
 % total C
@@ -133,7 +178,11 @@ cchlQC.sumC_5to10 = real(table2array(sum(cchlQC(:,14:15), 2, 'omitnan')));
 % 10-20 µm fraction
 cchlQC.sumC_10to20 = real(table2array(sum(cchlQC(:,16:17), 2, 'omitnan')));
 
+% 5-20 µm fraction
+cchlQC.sumC_5to20 = real(table2array(sum(cchlQC(:, 14:17), 2, 'omitnan')));
 
+% greater than 5 fraction
+cchlQC.sumC_greaterthan5 = real(table2array(sum(cchlQC(:, 14:22), 2, 'omitnan')));
 %% C:chl ratios
 
 % C:chl for >0 µm fraction (total)
@@ -156,6 +205,12 @@ cchlQC.C_chl_ratio_10to20 = cchlQC.sumC_10to20 ./ cchlQC.chl_10to20;
 
 % C:chl for 5-10 µm fraction
 cchlQC.C_chl_ratio_5to10 = cchlQC.sumC_5to10 ./ cchlQC.chl_5to10;
+
+% C:chl for 5–20µm fraction
+cchlQC.C_chl_ratio_5to20 = cchlQC.sumC_5to20 ./ cchlQC.chl_5to20;
+
+% C:chl for >5 µm fraction
+cchlQC.C_chl_ratio_greaterthan5 = cchlQC.sumC_greaterthan5 ./ cchlQC.chl_5_avg;
 
 %% remove depths deeper than 100m
 
